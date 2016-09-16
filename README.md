@@ -1,7 +1,7 @@
 # Imperium
 Turn-Based strategy game on Python/Pygame
 
-Version alpha 0.01 :D
+Version alpha 0.02 :D
 
 
 Done:
