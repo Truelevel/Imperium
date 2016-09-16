@@ -7,16 +7,16 @@ Version alpha 0.01 :D
 Done:
 
 -basical graphics
--basical cities system(city has food, production, gold and science output. food for grow, production for buildings, gold for buying tiles. science is useless yet)
+-basical cities system(city has food, production, gold and science output. food for grow, production for buildings, gold for buying tiles, science for learning technologies)
 -few buildings at cities are avaible
--random map generation(very small size only :()
+-basic technology tree with 10 techs
+-random map generation(very small size only)
 -random cities generation and placing it on map(PLAYERS = num of cities)
 -basical ai
 
 
 TODO:
 
--technologies, tech tree
 -player interface
 -update graphics
 -add big world sizes and camera mode
