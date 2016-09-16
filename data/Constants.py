@@ -65,5 +65,10 @@ SAWMILL = 1
 MARKET = 2
 LIBRARY = 3
 
-BUILDINGS_NAME = ['Granary','Sawmill','Market','Library']
+#
+ID = 0
+NAME = 1
+TECH = 2
+MAXLVL = 3
+COST = 3
 

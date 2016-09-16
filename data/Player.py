@@ -8,8 +8,8 @@ class Player:
         self.id = id
         self.ai = ai
         self.gold = 0
-        self.science = 0
         self.city = city
+        
         #for AI
         self.global_strat = None
         self.global_strats = {
@@ -32,6 +32,8 @@ class Player:
             self.choose_idle_pop()
         if len(self.city.buildings_row) == 0: #what to build in city?
             self.choose_building()
+        if len(self.city.techs_row) == 0:
+            self.choose_tech()
         self.science_rate_config()
         print('My city: Food: ',self.city.food_output,' Production: ',self.city.prod_output,' Gold: ',self.city.gold_output,' Science: ',self.city.science_output)
         
@@ -116,24 +118,13 @@ class Player:
         self.seed = random.randint(0,2)
         self.global_strat = self.global_strats[i]
         self.report('has chosen ' + self.global_strat + ' strategy!')
-        i = random.randint(0,3)
-        if i == 0:
-            self.buildings_plan = [1,0,2,0,1,2,0,1,2,0,1,2,0,1,2]
-        elif i == 1:
-            self.buildings_plan = [0,1,0,1,0,2,0,1,2,0,1,2,1,2,2]
-        elif i == 2:
-            self.buildings_plan = [0,1,2,2,0,2,1,0,1,2,0,1,2,0,1]
-        else:
-            self.buildings_plan = [1,0,1,0,2,0,0,1,0,2,2,1,2,1,2]
     
     
     def choose_building(self):
-        if len(self.buildings_plan) > 0:
-            i = self.buildings_plan.pop(0)
-            self.city.build(i)
-        else:
-            self.city.build(random.randint(0,2))
-        
+        self.city.build(random.randint(0,len(self.city.buildings_avaible)-1))
+    
+    def choose_tech(self):
+        self.city.tech_learn(random.randint(0,len(self.city.techs_avaible)-1))
         
                     
                 

@@ -2,6 +2,7 @@ import pygame
 from data.Constants import *
 from data.Tile import *
 from data.Building import *
+from data.Tech import *
 #Class to control cities on the map
 class City:
     def __init__(self,x,y,screen,map):
@@ -31,6 +32,12 @@ class City:
 
         #information about population and output
         
+        self.science = 0
+        self.techs = [0] #list of technologies
+        self.techs_avaible = []
+        self.techs_row = []
+        self.check_avaible_techs()
+        
         self.pop = START_POP
         self.pop_idle = self.pop
         self.workers = [None,0,0,0] # [0] - blank, 1-food, 2-prod, 3-gold
@@ -38,11 +45,20 @@ class City:
         self.pop_next_food = int((10+self.pop*2)*(1+self.pop*0.4)) #food for every next point of population
         
         self.prod = 0
-        self.buildings = [0,0,0,0]
-        self.buildings_row = []
-        self.maintance = 0
+        self.buildings = []  #all buildings in the city
+        self.buildings_avaible = [] #what owner can to build right now
+        self.buildings_row = [] #buildings row
+        self.maintance = 0 #gold on buildings maintance
+        self.check_avaible_buildings()
         
         
+    def end_of_turn(self):
+        self.check_food()
+        self.check_prod()
+        self.check_gold()
+        self.check_science()
+        self.check_avaible_buildings()    
+        self.check_avaible_techs()
         
     def render(self):
         self.screen.blit(self.image,((self.x - 1)*TILE_SIZE,(self.y-1)*TILE_SIZE))
@@ -63,13 +79,12 @@ class City:
         menu.blit(FONT01.render('Tile cost ' + str(self.tile_cost),0,YELLOW),(830,225))
         menu.blit(FONT01.render('Science output: ' + str(self.science_output),0,BLUE),(830,260))
         menu.blit(FONT01.render('Science rate: ' + str(self.player.science_rate),0,BLUE),(830,285))
-        menu.blit(FONT01.render('Total science: ' + str(self.player.science),0,BLUE),(830,310))
+        if len(self.techs_row) > 0:
+            menu.blit(FONT01.render(TECH_TREE[self.techs_row[0]].name + ': ' + str(self.science)+'/'+str(TECH_TREE[self.techs_row[0]].cost),0,BLUE),(830,310))
         menu.blit(FONT02.render('Buildings: ',0,COLOR02),(830,350))
-        temp = 1
         for i in self.buildings:
-            if i != 0:
-                menu.blit(FONT01.render(i.name + ' ' + str(i.level) + ' ' + str(i.output),0,COLOR02),(830,350+temp*25))
-                temp += 1
+                menu.blit(FONT01.render(i.name + ' ' + str(i.level) + ' ' + str(i.output),0,COLOR02),(830,375+self.buildings.index(i)*25))
+
     
 ##################TILES#############################
         
@@ -121,25 +136,47 @@ class City:
             
 ###########################BUILDINGS###########################
     
-    def build(self,type):
-        self.buildings_row.append(Building(self,type))
+    def build(self,num):
+        temp = self.buildings_avaible.pop(num)
+        self.buildings_row.append(temp)
+        self.check_avaible_buildings()
         
     
     def building_done(self):
         a = self.buildings_row.pop(0)
-        self.buildings[a.type] = a
-        self.check_outputs()
+        self.prod -= a.cost
+        for i in self.buildings:
+            if i.type == a.type:
+                self.buildings.remove(i)
+        self.buildings.append(a)
+    
+    def building_find(self,type):
+        for i in self.buildings:
+            if i.type == type:
+                return i
+        NONE_BUILDING = Building(self,type)
+        NONE_BUILDING.output = 0
+        return NONE_BUILDING
         
+############################TECHNOLOGIES########################
+
+    def tech_learn(self,num):
+        temp = self.techs_avaible.pop(num)
+        self.techs_row.append(temp)
+        self.check_avaible_techs()
+    
+    def tech_done(self):
+        self.science -= TECH_TREE[self.techs_row[0]].cost
+        self.techs.append(self.techs_row.pop(0))
 
 ############################CHECKS##############################
     def check_outputs(self):
-        bo = self.check_buildings_output()
         self.check_maintance()
-        self.food_output = self.basic_output[0] + 10 * self.workers[FOOD] + bo[0] - self.pop * 3
-        self.prod_output = self.basic_output[1] + 10 * self.workers[PROD] + bo[1]
-        self.gold_total = self.basic_output[2] + 10 * self.workers[GOLD] + bo[2] - self.maintance
-        self.science_output = self.pop + self.gold_total * self.player.science_rate
-        self.gold_output = self.gold_total - self.gold_total * self.player.science_rate
+        self.food_output = self.basic_output[0] + 10 * self.workers[FOOD] + self.building_find(0).output - self.pop * 3
+        self.prod_output = self.basic_output[1] + 10 * self.workers[PROD] + self.building_find(1).output
+        self.gold_total = self.basic_output[2] + 10 * self.workers[GOLD] + self.building_find(2).output
+        self.science_output = int((self.pop + self.gold_total * self.player.science_rate) * (1 + self.building_find(3).level*0.2))
+        self.gold_output = int(self.gold_total - self.gold_total * self.player.science_rate)
         
     
     def check_food(self):
@@ -165,7 +202,6 @@ class City:
         if len(self.buildings_row) > 0:
             self.prod += self.prod_output
             if self.prod >= self.buildings_row[0].cost:
-                self.prod -= self.buildings_row[0].cost
                 self.building_done()
                     
     def check_gold(self):
@@ -174,28 +210,36 @@ class City:
             self.player.science += self.player.gold
             self.player.gold = 0
     
+    def check_science(self):
+        self.science += self.science_output
+        if self.science >= TECH_TREE[self.techs_row[0]].cost:
+            self.tech_done()
+            
+    
     def check_maintance(self):
         self.maintance = 0
         for i in self.buildings:
-            if i != 0:
-                self.maintance += i.maintance
+            self.maintance += i.maintance
     
-    def check_buildings_output(self):
-        out = [0,0,0]
-        for i in self.buildings:
-            if i != 0:
-                out[i.type] += i.output
-        return out
-    
-    
-    
-    
-            
-        
-            
-
-
-           
-    
+    def check_row(self,type): 
+        for i in self.buildings_row:
+            if i.type == type:
+                return False
+        return True
         
     
+    def check_avaible_buildings(self):
+        self.buildings_avaible = []
+        for type in range(len(BUILDINGS_DICT)):
+            if BUILDINGS_DICT[type][2] in self.techs:
+                if self.check_row:
+                    if self.building_find(type).level <= BUILDINGS_DICT[type][MAXLVL]:
+                        self.buildings_avaible.append(Building(self,type))
+                    
+                    
+    def check_avaible_techs(self):
+        self.techs_avaible = []
+        for id in range(1, len(TECH_TREE)):
+            if id not in self.techs:
+                if all(techs in self.techs for techs in TECH_TREE[id].required_tech):
+                    self.techs_avaible.append(id)

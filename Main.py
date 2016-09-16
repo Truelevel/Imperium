@@ -65,12 +65,9 @@ class Main():
         for ai in self.players:
             if ai.ai == True:
                 ai.ai_turn()
-            ai.science += ai.city.science_output
-            ai.city.check_food()
-            ai.city.check_prod()
-            ai.city.check_gold()
+            ai.city.end_of_turn()
         self.turn += 1
-        print('Next Turn! (', str(self.turn),')')
+        print('Next Turn! (',    str(self.turn),')')
         
     
     def create_city(self):
@@ -100,7 +97,7 @@ class Main():
             num = 4
         for id in range(0,num):
             if humans_count < humans:
-                self.create_player(id, ai = False)
+                self.create_player(id, ai = False) 
                 humans_count += 1
             else:
                 self.create_player(id)
